@@ -66,15 +66,17 @@ app.post('/todos', function(req, res) {
 
 // DELETE /todos/:id
 app.delete('/todos/:id', function(req, res) {
-	var variable = _.findWhere(todos, {
-		id: parseInt(req.params.id, 10)
+	db.todo.destroy({where:
+		{id: parseInt(req.params.id, 10)}})
+	.then(function (rowsDeleted){
+		if (rowsDeleted>0) {
+			res.status(204).send();
+		}else{
+			res.status(404).send({error: 'No valid ID'});
+		}
+	}).catch (function (e){
+		res.status(500).send(e);
 	});
-	if (variable) {
-		todos = _.without(todos, variable)
-		res.send(variable);
-	} else {
-		res.status(404).send();
-	}
 });
 
 // PUT /todos/:id
