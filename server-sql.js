@@ -99,7 +99,7 @@ app.put('/todos/:id', function(req, res) {
 
 	db.todo.findById(parseInt(req.params.id, 10)).then(function (todo){
 		if (todo) {
-			return todo.update(options).then(function(todos){ 
+			todo.update(options).then(function(todos){ 
 				res.json(todos.toJSON());
 			}, function (e){
 				res.status(400).json(e);
@@ -111,6 +111,17 @@ app.put('/todos/:id', function(req, res) {
 		res.status (500).send();
 	});
 
+});
+
+// POST /user
+app.post('/user', function(req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+	db.user.create(body).then(function(user) {
+		res.json(user.toJSON());
+	}).catch(function(e) {
+		res.status(400).json(e);
+	});
 });
 
 db.sequelize.sync().then(function() {
