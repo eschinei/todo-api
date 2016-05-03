@@ -4,6 +4,8 @@ var bodyParser = require('body-parser');
 var _ = require('underscore');
 var db = require('./db.js');
 
+var bcryptjs = require('bcryptjs');
+
 var PORT = process.env.PORT || 3000;
 
 var todos = [];
@@ -86,7 +88,7 @@ app.delete('/todos/:id', function(req, res) {
 
 // PUT /todos/:id
 app.put('/todos/:id', function(req, res) {
-	var body = _.pick(req.body,'description','completed');
+	var body = _.pick(req.body, 'description', 'completed');
 	options = {};
 
 	if (body.hasOwnProperty('description')) {
@@ -97,18 +99,18 @@ app.put('/todos/:id', function(req, res) {
 		options.completed = body.completed;
 	}
 
-	db.todo.findById(parseInt(req.params.id, 10)).then(function (todo){
+	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
 		if (todo) {
-			todo.update(options).then(function(todos){ 
+			todo.update(options).then(function(todos) {
 				res.json(todos.toJSON());
-			}, function (e){
+			}, function(e) {
 				res.status(400).json(e);
 			});
 		} else {
 			res.status(404).send();
 		}
-	}, function () {
-		res.status (500).send();
+	}, function() {
+		res.status(500).send();
 	});
 
 });
@@ -122,6 +124,19 @@ app.post('/user', function(req, res) {
 	}).catch(function(e) {
 		res.status(400).json(e);
 	});
+});
+
+// POST /users / login
+app.post('/user/login', function(req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+	db.user.authenticate(body).then(function(user) {
+		res.json(user.toPublicJSON());
+	}, function() {
+		res.status(401).send();
+	});
+
+
 });
 
 db.sequelize.sync().then(function() {
