@@ -37,9 +37,7 @@ app.get('/todos', middleware.requireAuthentication, function(req, res) {
 	db.todo.findAll({
 		where
 	}).then(function(todos) {
-		//req.user.getTodo(todos).then(function(todos) {
 		res.json(todos);
-		//});
 	}).catch(function(e) {
 		res.status(500).send();
 	});
@@ -50,7 +48,7 @@ app.get('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	db.todo.findOne({
 		where: {
 			id: parseInt(req.params.id, 10),
-			userId: req.user.id
+			userId: req.user.get('id')
 		}
 	}).then(function(todo) {
 		if (todo) {
@@ -83,7 +81,7 @@ app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	db.todo.destroy({
 			where: {
 				id: parseInt(req.params.id, 10),
-				userId: req.user.id
+				userId: req.user.get('id')
 			}
 		}).then(function(rowsDeleted) {
 			if (rowsDeleted > 0) {
@@ -114,7 +112,7 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	db.todo.findOne({
 		where: {
 			id: parseInt(req.params.id, 10),
-			userId: req.user.id
+			userId: req.user.get('id')
 		}
 	}).then(function(todo) {
 		if (todo) {
