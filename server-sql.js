@@ -2,7 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
 var db = require('./db.js');
-var middleware = require ('./middleware.js') (db);
+var middleware = require('./middleware.js')(db);
 var bcryptjs = require('bcryptjs');
 
 var app = express();
@@ -32,18 +32,27 @@ app.get('/todos', middleware.requireAuthentication, function(req, res) {
 		};
 	}
 
+	where.userId = req.user.get('id');
+
 	db.todo.findAll({
 		where
 	}).then(function(todos) {
+		//req.user.getTodo(todos).then(function(todos) {
 		res.json(todos);
+		//});
 	}).catch(function(e) {
-		send.status(500).send();
+		res.status(500).send();
 	});
 });
 
 // GET /todos/:id
 app.get('/todos/:id', middleware.requireAuthentication, function(req, res) {
-	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
+	db.todo.findOne({
+		where: {
+			id: parseInt(req.params.id, 10),
+			userId: req.user.id
+		}
+	}).then(function(todo) {
 		if (todo) {
 			res.json(todo.toJSON());
 		} else {
@@ -59,10 +68,10 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 
 	db.todo.create(body).then(function(todo) {
-		req.user.addTodo(todo).then(function(){
+		req.user.addTodo(todo).then(function() {
 			return todo.reload();
-		}).then (function (todo){
-			res.json(todo.toJSON());			
+		}).then(function(todo) {
+			res.json(todo.toJSON());
 		});
 	}).catch(function(e) {
 		res.status(400).json(e);
@@ -73,10 +82,10 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	db.todo.destroy({
 			where: {
-				id: parseInt(req.params.id, 10)
+				id: parseInt(req.params.id, 10),
+				userId: req.user.id
 			}
-		})
-		.then(function(rowsDeleted) {
+		}).then(function(rowsDeleted) {
 			if (rowsDeleted > 0) {
 				res.status(204).send();
 			} else {
@@ -102,7 +111,12 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 		options.completed = body.completed;
 	}
 
-	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
+	db.todo.findOne({
+		where: {
+			id: parseInt(req.params.id, 10),
+			userId: req.user.id
+		}
+	}).then(function(todo) {
 		if (todo) {
 			todo.update(options).then(function(todos) {
 				res.json(todos.toJSON());
@@ -147,7 +161,7 @@ app.post('/user/login', function(req, res) {
 
 });
 
-db.sequelize.sync({force:true}).then(function() {
+db.sequelize.sync().then(function() {
 	app.listen(PORT, function() {
 		console.log('Todo fue bien en el puerto: ' + PORT + '!');
 	});
