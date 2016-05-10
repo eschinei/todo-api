@@ -79,21 +79,21 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 // DELETE /todos/:id
 app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	db.todo.destroy({
-			where: {
-				id: parseInt(req.params.id, 10),
-				userId: req.user.get('id')
-			}
-		}).then(function(rowsDeleted) {
-			if (rowsDeleted > 0) {
-				res.status(204).send();
-			} else {
-				res.status(404).send({
-					error: 'No valid ID'
-				});
-			}
-		}).catch(function(e) {
-			res.status(500).send(e);
-		});
+		where: {
+			id: parseInt(req.params.id, 10),
+			userId: req.user.get('id')
+		}
+	}).then(function(rowsDeleted) {
+		if (rowsDeleted > 0) {
+			res.status(204).send();
+		} else {
+			res.status(404).send({
+				error: 'No valid ID'
+			});
+		}
+	}).catch(function(e) {
+		res.status(500).send(e);
+	});
 });
 
 // PUT /todos/:id
@@ -130,6 +130,18 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 
 });
 
+// LOG OUT
+// DELETE /users / login
+app.delete('/user/login', middleware.requireAuthentication, function(req, res) {
+
+	req.token.destroy().then(function() {
+		res.status(204).send();
+	}).catch(function() {
+		res.status(500).json();
+	});
+
+});
+
 // POST /user
 app.post('/user', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
@@ -144,23 +156,26 @@ app.post('/user', function(req, res) {
 // POST /users / login
 app.post('/user/login', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
+	var userInstance;
 
 	db.user.authenticate(body).then(function(user) {
 		var token = user.generateToken('aunthentication');
-		if (token) {
-			res.header('Auth', token).json(user.toPublicJSON());
-		} else {
-			res.status(401).send();
-		}
-	}, function() {
+		userInstance = user;
+
+		return db.token.create({
+			token: token
+		});
+	}).then(function(tokenInstance) {
+		return res.header('Auth', tokenInstance.get('token')).json(userInstance.toPublicJSON());
+	}).catch(function() {
 		res.status(401).send();
 	});
-
-
 });
 
-db.sequelize.sync({force:true}).then(function() {
+db.sequelize.sync({
+	force: true
+}).then(function() {
 	app.listen(PORT, function() {
-		console.log('Todo fue bien en el puerto: ' + PORT + '!');
+		console.log('Puerto activo: ' + PORT + '!');
 	});
 });
